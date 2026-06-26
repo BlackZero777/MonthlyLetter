@@ -335,7 +335,9 @@
       </div>
       <div class="note" style="text-align:left;padding-top:14px;">
         只會用 Google 的「應用程式專屬隱藏空間」（appDataFolder）存一個小檔案，
-        看不到也動不到你Drive裡其他任何檔案。
+        看不到也動不到你Drive裡其他任何檔案。<br><br>
+        小提醒：每次重新打開這個頁面，需要重新點一次「登入並連結」才能同步
+        （這是瀏覽器安全機制，不是故障）。平常記錄資料不受影響，只有要同步時才需要登入。
       </div>
     </div>
 
@@ -833,26 +835,6 @@ $("syncNowBtn").addEventListener("click", ()=> syncNow(false));
 
 refreshSyncUI();
 render();
-
-// 頁面開啟時嘗試靜默重新連結（如果之前已連結過）
-(function tryAutoReconnect(){
-  if(localStorage.getItem("yueshin_drive_connected") !== "1") return;
-  if(!getSavedClientId()) return;
-  let tries = 0;
-  const poll = setInterval(()=>{
-    tries++;
-    if(window.google && google.accounts && google.accounts.oauth2){
-      clearInterval(poll);
-      const tc = ensureTokenClient();
-      if(tc){
-        isSilentAttempt = true;
-        tc.requestAccessToken({ prompt: "none" });
-      }
-    } else if(tries > 20){
-      clearInterval(poll);
-    }
-  }, 200);
-})();
 </script>
 </body>
 </html>
