@@ -235,7 +235,7 @@
 
   <header>
     <div class="brand">月　信</div>
-    <div class="brand-sub">只記在這支手機裡【版本V1.2】</div>
+    <div class="brand-sub">只記在這支手機裡</div>
   </header>
 
   <div class="moon-stage">
@@ -844,25 +844,40 @@ async function pushRemote(){
   }catch(e){ console.warn("同步失敗：", e.message); }
 }
 
+function mergeData(local, remote){
+  const map = new Map();
+  (local.logs||[]).forEach(l=> map.set(l.id, l));
+  (remote.logs||[]).forEach(l=> { if(!map.has(l.id)) map.set(l.id, l); });
+  const merged = { ...local };
+  merged.logs = Array.from(map.values()).sort((a,b)=> a.start.localeCompare(b.start));
+  merged.lastModified = Math.max(local.lastModified||0, remote.lastModified||0);
+  if((remote.lastModified||0) > (local.lastModified||0)){
+    merged.avgCycle = remote.avgCycle;
+    merged.autoCalc = remote.autoCalc;
+    merged.remindDays = remote.remindDays;
+  }
+  return merged;
+}
+
 async function syncNow(silent){
   if(!accessToken){ if(!silent) alert("請先登入並連結"); return; }
   try{
     const fileId = await findRemoteFile();
-    if(fileId){
-      const remote = await fetchRemoteData(fileId);
-      if(remote && (remote.lastModified||0) > (data.lastModified||0)){
-        const useRemote = silent ? true : confirm("雲端有較新的資料，要改用雲端版本嗎？\n（取消＝保留本機，並覆蓋雲端）");
-        if(useRemote){
-          data = remote;
-          saveData(data);
-          render();
-          refreshSyncUI();
-          return;
-        }
-      }
+    let remote = null;
+    if(fileId) remote = await fetchRemoteData(fileId);
+    let gained = 0;
+    if(remote){
+      const before = data.logs.length;
+      data = mergeData(data, remote);
+      gained = data.logs.length - before;
+      saveData(data);
+      render();
+      refreshSyncUI();
     }
     await pushRemote();
-    if(!silent) alert("同步完成");
+    if(!silent){
+      alert(gained > 0 ? `同步完成，補進了 ${gained} 筆雲端上的紀錄` : "同步完成");
+    }
   }catch(e){
     if(!silent) alert("同步失敗："+e.message);
   }
