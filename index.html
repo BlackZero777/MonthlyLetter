@@ -234,8 +234,8 @@
 <div class="wrap">
 
   <header>
-    <div class="brand">月　信 </div>
-    <div class="brand-sub">只記在這支手機裡【版本V1.1】</div>
+    <div class="brand">月　信</div>
+    <div class="brand-sub">只記在這支手機裡【版本V1.2】</div>
   </header>
 
   <div class="moon-stage">
@@ -249,6 +249,7 @@
     </div>
   </div>
   <div class="status-line" id="statusLine">尚未開始記錄，先記一次經期吧。</div>
+  <div class="status-line" id="avgCycleLine" style="margin-top:-14px;"></div>
   <div style="text-align:center;margin-bottom:18px;">
     <button class="btn-secondary" id="icsBtn" style="padding:10px 20px;font-size:13px;display:inline-block;width:auto;">＋ 加入手機日曆提醒</button>
     <div style="font-size:11px;color:var(--moonlight-dim);margin-top:8px;">補登新紀錄後，記得重新點一次，蓋掉舊的提醒</div>
@@ -475,6 +476,14 @@ function render(){
   $("avgCycle").value = cycleLen;
   $("autoCalc").checked = !!data.autoCalc;
   $("remindDays").value = data.remindDays ?? 2;
+
+  const avgLine = $("avgCycleLine");
+  if(logs.length < 2){
+    avgLine.textContent = "";
+  } else {
+    const calced = computeAvgCycle();
+    avgLine.innerHTML = `依過去紀錄推算，平均週期 <b>${calced} 天</b>`;
+  }
 }
 
 function computePredictedRanges(cycleLen, logs, count){
