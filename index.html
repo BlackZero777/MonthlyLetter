@@ -271,8 +271,14 @@
   </section>
 
   <section>
-    <div class="section-title">紀錄</div>
+    <div class="section-title">
+      <span>紀錄</span>
+      <span id="logCount" style="font-size:11px;"></span>
+    </div>
     <div id="logList"></div>
+    <div style="text-align:center;margin-top:10px;">
+      <button class="btn-secondary" id="viewAllLogsBtn" style="padding:9px 18px;font-size:13px;display:none;width:auto;">查看全部紀錄</button>
+    </div>
   </section>
 
   <div class="note">資料預設只存在這支裝置的瀏覽器裡。<br>想跨手機同步的話，到「設定」連結你自己的 Google 帳號即可。</div>
@@ -336,13 +342,25 @@
       <div class="note" style="text-align:left;padding-top:14px;">
         只會用 Google 的「應用程式專屬隱藏空間」（appDataFolder）存一個小檔案，
         看不到也動不到你Drive裡其他任何檔案。<br><br>
-        小提醒：每次重新打開這個頁面，需要重新點一次「登入並連結」才能同步
-        （這是瀏覽器安全機制，不是故障）。平常記錄資料不受影響，只有要同步時才需要登入。
+        現在的設計是：平常記錄、刪除、改設定，<b>完全不會自動連線雲端</b>，
+        只存在這支裝置裡。只有你自己按「登入並連結」或「立即同步」時，
+        才會真正跟Google雲端硬碟交換資料。
       </div>
     </div>
 
     <div class="btn-row" style="margin-top:18px;">
       <button class="btn-secondary" id="closeSettings">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- 全部紀錄 modal -->
+<div class="overlay" id="logsOverlay">
+  <div class="sheet">
+    <h3>全部紀錄</h3>
+    <div id="logListFull" style="max-height:60vh;overflow-y:auto;"></div>
+    <div class="btn-row" style="margin-top:18px;">
+      <button class="btn-secondary" id="closeLogsOverlay">關閉</button>
     </div>
   </div>
 </div>
@@ -366,7 +384,6 @@ function saveData(d){
 function touchAndSave(d){
   d.lastModified = Date.now();
   saveData(d);
-  if(accessToken) pushRemote().catch(()=>{});
 }
 
 let data = loadData();
@@ -527,13 +544,21 @@ function renderCalendar(cycleLen, logs){
 }
 
 function renderLogList(logs){
-  const list = $("logList");
-  list.innerHTML = "";
-  if(!logs.length){
-    list.innerHTML = `<div class="empty-state">還沒有紀錄</div>`;
+  $("logCount").textContent = logs.length ? `共 ${logs.length} 筆` : "";
+  const reversed = [...logs].reverse();
+  const shortList = reversed.slice(0, 5);
+  fillLogContainer($("logList"), shortList);
+  fillLogContainer($("logListFull"), reversed);
+  $("viewAllLogsBtn").style.display = logs.length > 5 ? "inline-block" : "none";
+}
+
+function fillLogContainer(container, items){
+  container.innerHTML = "";
+  if(!items.length){
+    container.innerHTML = `<div class="empty-state">還沒有紀錄</div>`;
     return;
   }
-  [...logs].reverse().forEach(l=>{
+  items.forEach(l=>{
     const row = document.createElement("div");
     row.className = "log-item";
     const len = l.end ? (daysBetween(parseISO(l.start), parseISO(l.end))+1)+" 天" : "進行中";
@@ -546,9 +571,9 @@ function renderLogList(logs){
         <span class="del" data-id="${l.id}">刪除</span>
       </div>
     `;
-    list.appendChild(row);
+    container.appendChild(row);
   });
-  list.querySelectorAll(".del").forEach(btn=>{
+  container.querySelectorAll(".del").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       if(confirm("確定要刪除這筆紀錄嗎？")){
         data.logs = data.logs.filter(l=> l.id !== btn.dataset.id);
@@ -558,6 +583,9 @@ function renderLogList(logs){
     });
   });
 }
+
+$("viewAllLogsBtn").addEventListener("click", ()=> $("logsOverlay").classList.add("show"));
+$("closeLogsOverlay").addEventListener("click", ()=> $("logsOverlay").classList.remove("show"));
 
 // ---- 事件 ----
 $("logBtn").addEventListener("click", ()=>{
