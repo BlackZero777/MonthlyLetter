@@ -682,6 +682,7 @@ $("importFile").addEventListener("change", (e)=>{
 const DRIVE_FILE_NAME = "yueshin_data.json";
 let tokenClient = null;
 let accessToken = null;
+let isSilentAttempt = false;
 let driveFileId = localStorage.getItem("yueshin_drive_fileid") || null;
 
 function getSavedClientId(){ return localStorage.getItem("yueshin_client_id") || ""; }
@@ -707,9 +708,15 @@ function ensureTokenClient(){
       client_id: clientId,
       scope: "https://www.googleapis.com/auth/drive.appdata",
       callback: async (resp)=>{
-        if(resp.error){ alert("登入失敗："+resp.error); return; }
+        if(resp.error){
+          if(!isSilentAttempt) alert("登入失敗："+resp.error);
+          isSilentAttempt = false;
+          return;
+        }
         accessToken = resp.access_token;
+        localStorage.setItem("yueshin_drive_connected", "1");
         refreshSyncUI();
+        isSilentAttempt = false;
         await syncNow(true);
       }
     });
@@ -727,6 +734,7 @@ $("googleSignOutBtn").addEventListener("click", ()=>{
   accessToken = null;
   driveFileId = null;
   localStorage.removeItem("yueshin_drive_fileid");
+  localStorage.removeItem("yueshin_drive_connected");
   refreshSyncUI();
   alert("已取消連結，本機資料仍保留");
 });
@@ -825,6 +833,26 @@ $("syncNowBtn").addEventListener("click", ()=> syncNow(false));
 
 refreshSyncUI();
 render();
+
+// 頁面開啟時嘗試靜默重新連結（如果之前已連結過）
+(function tryAutoReconnect(){
+  if(localStorage.getItem("yueshin_drive_connected") !== "1") return;
+  if(!getSavedClientId()) return;
+  let tries = 0;
+  const poll = setInterval(()=>{
+    tries++;
+    if(window.google && google.accounts && google.accounts.oauth2){
+      clearInterval(poll);
+      const tc = ensureTokenClient();
+      if(tc){
+        isSilentAttempt = true;
+        tc.requestAccessToken({ prompt: "none" });
+      }
+    } else if(tries > 20){
+      clearInterval(poll);
+    }
+  }, 200);
+})();
 </script>
 </body>
 </html>
