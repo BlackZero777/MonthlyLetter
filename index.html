@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>月信</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="月信">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1C2333">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
@@ -235,7 +239,7 @@
 
   <header>
     <div class="brand">月　信</div>
-    <div class="brand-sub">只記在這支手機裡【版本V1.3】</div>
+    <div class="brand-sub">只記在這支手機裡</div>
   </header>
 
   <div class="moon-stage">
@@ -368,6 +372,72 @@
 
 <script>
 const STORAGE_KEY = "yueshin_data_v1";
+
+// ---- 產生自訂主畫面圖示（金色月亮，深藍底）----
+(function setupAppIcon(){
+  function roundRect(ctx,x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+  function generateIcon(size){
+    const canvas = document.createElement("canvas");
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    const bg = ctx.createRadialGradient(size*0.5,size*0.4,size*0.05,size*0.5,size*0.5,size*0.75);
+    bg.addColorStop(0, "#2a3350");
+    bg.addColorStop(1, "#141928");
+    ctx.fillStyle = bg;
+    roundRect(ctx, 0, 0, size, size, size*0.2);
+    ctx.fill();
+    const moonGrad = ctx.createLinearGradient(size*0.25, size*0.25, size*0.78, size*0.78);
+    moonGrad.addColorStop(0, "#D4AF7A");
+    moonGrad.addColorStop(0.55, "#F2EDE4");
+    moonGrad.addColorStop(1, "#D4AF7A");
+    ctx.beginPath();
+    ctx.arc(size*0.5, size*0.52, size*0.28, 0, Math.PI*2);
+    ctx.fillStyle = moonGrad;
+    ctx.shadowColor = "rgba(212,175,122,0.55)";
+    ctx.shadowBlur = size*0.08;
+    ctx.fill();
+    return canvas.toDataURL("image/png");
+  }
+
+  const icon180 = generateIcon(180);
+  const icon512 = generateIcon(512);
+
+  const appleLink = document.createElement("link");
+  appleLink.rel = "apple-touch-icon";
+  appleLink.href = icon180;
+  document.head.appendChild(appleLink);
+
+  const favicon = document.createElement("link");
+  favicon.rel = "icon";
+  favicon.href = icon180;
+  document.head.appendChild(favicon);
+
+  const manifest = {
+    name: "月信",
+    short_name: "月信",
+    start_url: ".",
+    display: "standalone",
+    background_color: "#1C2333",
+    theme_color: "#1C2333",
+    icons: [
+      { src: icon512, sizes: "512x512", type: "image/png" },
+      { src: icon180, sizes: "180x180", type: "image/png" }
+    ]
+  };
+  const manifestBlob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
+  const manifestLink = document.createElement("link");
+  manifestLink.rel = "manifest";
+  manifestLink.href = URL.createObjectURL(manifestBlob);
+  document.head.appendChild(manifestLink);
+})();
 
 function loadData(){
   try{
