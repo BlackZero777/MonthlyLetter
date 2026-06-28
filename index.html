@@ -324,6 +324,25 @@
       <span>提前提醒天數（給日曆提醒用）</span>
       <input type="number" id="remindDays" min="0" max="14">
     </div>
+
+    <div class="sync-block" style="border-top:1px solid var(--line);">
+      <div class="section-title" style="margin-bottom:10px;">外觀顏色</div>
+      <div class="settings-row">
+        <span>底色（背景）</span>
+        <input type="color" id="themeBg" style="width:44px;height:30px;border:none;background:transparent;cursor:pointer;">
+      </div>
+      <div class="settings-row">
+        <span>畫面色塊（按鈕／標記）</span>
+        <input type="color" id="themeAccent" style="width:44px;height:30px;border:none;background:transparent;cursor:pointer;">
+      </div>
+      <div class="settings-row">
+        <span>字顏色</span>
+        <input type="color" id="themeText" style="width:44px;height:30px;border:none;background:transparent;cursor:pointer;">
+      </div>
+      <div class="io-row">
+        <button id="resetThemeBtn">還原預設顏色</button>
+      </div>
+    </div>
     <div class="io-row">
       <button id="exportBtn">匯出備份</button>
       <button id="importBtn">匯入備份</button>
@@ -439,14 +458,17 @@ const STORAGE_KEY = "yueshin_data_v1";
   document.head.appendChild(manifestLink);
 })();
 
+const DEFAULT_THEME = { bg:"#1C2333", text:"#F2EDE4", accent:"#C97064" };
+
 function loadData(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return { logs: [], avgCycle: 28, autoCalc: true, lastModified: 0 };
+    if(!raw) return { logs: [], avgCycle: 28, autoCalc: true, lastModified: 0, theme: {...DEFAULT_THEME} };
     const d = JSON.parse(raw);
     if(!d.lastModified) d.lastModified = 0;
+    if(!d.theme) d.theme = {...DEFAULT_THEME};
     return d;
-  }catch(e){ return { logs: [], avgCycle: 28, autoCalc: true, lastModified: 0 }; }
+  }catch(e){ return { logs: [], avgCycle: 28, autoCalc: true, lastModified: 0, theme: {...DEFAULT_THEME} }; }
 }
 function saveData(d){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
@@ -461,6 +483,36 @@ let data = loadData();
 let calViewDate = new Date();
 
 const $ = (id)=>document.getElementById(id);
+
+// ---- 外觀顏色套用 ----
+function clamp255(v){ return Math.max(0, Math.min(255, v)); }
+function hexToRgb(hex){
+  hex = hex.replace("#","");
+  if(hex.length===3) hex = hex.split("").map(c=>c+c).join("");
+  const num = parseInt(hex,16);
+  return [num>>16 & 255, num>>8 & 255, num & 255];
+}
+function rgbToHex(r,g,b){
+  return "#"+[r,g,b].map(v=>clamp255(Math.round(v)).toString(16).padStart(2,"0")).join("");
+}
+function shade(hex, percent){
+  const [r,g,b] = hexToRgb(hex);
+  const t = percent<0 ? 0 : 255;
+  const p = Math.abs(percent)/100;
+  return rgbToHex(r+(t-r)*p, g+(t-g)*p, b+(t-b)*p);
+}
+function applyTheme(theme){
+  const t = theme || DEFAULT_THEME;
+  const root = document.documentElement.style;
+  root.setProperty("--ink", t.bg);
+  root.setProperty("--ink-deep", shade(t.bg, -35));
+  root.setProperty("--moonlight", t.text);
+  root.setProperty("--moonlight-dim", shade(t.text, -25));
+  root.setProperty("--rose", t.accent);
+  document.body.style.background =
+    `radial-gradient(circle at 50% -10%, ${shade(t.bg,12)} 0%, ${t.bg} 45%, ${shade(t.bg,-35)} 100%)`;
+}
+applyTheme(data.theme);
 
 function toISO(d){
   return d.toISOString().slice(0,10);
@@ -692,15 +744,42 @@ $("saveLog").addEventListener("click", ()=>{
 $("settingsBtn").addEventListener("click", ()=>{
   $("settingsOverlay").classList.add("show");
   refreshSyncUI();
+  const t = data.theme || DEFAULT_THEME;
+  $("themeBg").value = t.bg;
+  $("themeAccent").value = t.accent;
+  $("themeText").value = t.text;
 });
 $("closeSettings").addEventListener("click", ()=>{
   data.avgCycle = parseInt($("avgCycle").value)||28;
   data.autoCalc = $("autoCalc").checked;
   data.remindDays = parseInt($("remindDays").value);
   if(isNaN(data.remindDays) || data.remindDays<0) data.remindDays = 2;
+  data.theme = {
+    bg: $("themeBg").value,
+    accent: $("themeAccent").value,
+    text: $("themeText").value
+  };
+  applyTheme(data.theme);
   touchAndSave(data);
   $("settingsOverlay").classList.remove("show");
   render();
+});
+
+["themeBg","themeAccent","themeText"].forEach(id=>{
+  $(id).addEventListener("input", ()=>{
+    applyTheme({
+      bg: $("themeBg").value,
+      accent: $("themeAccent").value,
+      text: $("themeText").value
+    });
+  });
+});
+
+$("resetThemeBtn").addEventListener("click", ()=>{
+  $("themeBg").value = DEFAULT_THEME.bg;
+  $("themeAccent").value = DEFAULT_THEME.accent;
+  $("themeText").value = DEFAULT_THEME.text;
+  applyTheme(DEFAULT_THEME);
 });
 
 $("prevMonth").addEventListener("click", ()=>{
