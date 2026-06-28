@@ -219,6 +219,9 @@
     padding:24px 22px 36px;
     max-width:480px;margin:0 auto;
     border-top:1px solid var(--line);
+    max-height:85vh;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
   }
   .sheet h3{margin:0 0 16px;font-size:16px;font-weight:600;letter-spacing:0.04em;}
   .field{margin-bottom:16px;}
@@ -286,7 +289,9 @@
     </div>
   </section>
 
-  <div class="note">資料預設只存在這支裝置的瀏覽器裡。<br>想跨手機同步的話，到「設定」連結你自己的 Google 帳號即可。</div>
+  <div class="note">資料預設只存在這支裝置的瀏覽器裡。<br>想跨手機同步的話，到「設定」連結你自己的 Google 帳號即可。<br><br>
+  <span style="color:var(--gold);">小提醒：</span>iPhone上「主畫面圖示」跟「瀏覽器網址」是兩個分開的儲存空間，
+  記得固定用同一種方式打開，才不會看起來像資料不見了。</div>
 </div>
 
 <!-- 記錄 modal -->
@@ -374,6 +379,10 @@
 
     <div class="btn-row" style="margin-top:18px;">
       <button class="btn-secondary" id="closeSettings">關閉</button>
+    </div>
+    <div class="note" style="padding-top:14px;">
+      <span style="color:var(--gold);">小提醒：</span>改完上面任何設定，記得到「Google雲端同步」按一次「立即同步」，
+      其他裝置才會跟著更新。
     </div>
   </div>
 </div>
