@@ -1013,6 +1013,7 @@ function mergeData(local, remote){
     merged.avgCycle = remote.avgCycle;
     merged.autoCalc = remote.autoCalc;
     merged.remindDays = remote.remindDays;
+    merged.theme = remote.theme || local.theme;
   }
   return merged;
 }
@@ -1029,6 +1030,7 @@ async function syncNow(silent){
       data = mergeData(data, remote);
       gained = data.logs.length - before;
       saveData(data);
+      applyTheme(data.theme);
       render();
       refreshSyncUI();
     }
